@@ -1,0 +1,11 @@
+[package]
+name = "lab84-mandelbrot-wgpu"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+wgpu="0.17"
+winit="0.28"
+pollster="0.3"
+bytemuck = { version = "1.14", features = ["derive"] }
+rayon = "1.10.0"
