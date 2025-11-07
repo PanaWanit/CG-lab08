@@ -39,6 +39,7 @@ pub struct State {
     compute_bind_group: wgpu::BindGroup,
 
     show_low_res: bool,
+    cursor_position: Option<(f64, f64)>,
 }
 
 impl State {
@@ -283,6 +284,7 @@ impl State {
             low_res_render_bind_group,
             compute_bind_group,
             show_low_res: false,
+            cursor_position: None,
         };
 
         s.trigger_render(false);
@@ -467,6 +469,35 @@ impl State {
         output_frame.present();
 
         Ok(())
+    }
+
+    pub fn update_cursor_position(&mut self, position: winit::dpi::PhysicalPosition<f64>) {
+        self.cursor_position = Some((position.x, position.y));
+    }
+
+    pub fn get_cursor_position(&self) -> Option<(f64, f64)> {
+        self.cursor_position
+    }
+
+    pub fn zoom_in(&mut self, cursor_pos: (f64, f64)) {
+        let zoom_factor = 0.5; // Zoom in by 50%
+        
+        // Convert cursor position to normalized coordinates
+        let norm_x = cursor_pos.0 as f32 / self.size.width as f32 - 0.5;
+        let norm_y = cursor_pos.1 as f32 / self.size.height as f32 - 0.5;
+        
+        // Calculate the point in the complex plane that the cursor is pointing at
+        let complex_x = self.view_params.center[0] + norm_x * self.view_params.range[0];
+        let complex_y = self.view_params.center[1] + norm_y * self.view_params.range[1];
+        
+        // Update the view parameters to zoom in on this point
+        self.view_params.range[0] *= zoom_factor;
+        self.view_params.range[1] *= zoom_factor;
+        self.view_params.center[0] = complex_x;
+        self.view_params.center[1] = complex_y;
+        
+        // Trigger a new render with the updated view
+        self.trigger_render(true);
     }
 }
 

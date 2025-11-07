@@ -1,6 +1,6 @@
 use winit::{
-    event::{Event, WindowEvent, MouseButton, ElementState},
-    event_loop::{ControlFlow, EventLoop},
+    event::{ Event, WindowEvent, KeyboardInput, ElementState, VirtualKeyCode },
+    event_loop::{ ControlFlow, EventLoop },
     window::WindowBuilder,
 };
 
@@ -10,11 +10,9 @@ use state::State;
 fn main() {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
-        .with_title("Mandelbrot Set Renderer")
-        .with_inner_size(winit::dpi::LogicalSize::new(1920, 1080))
+        .with_title("WGPU N-GON")
         .build(&event_loop)
         .unwrap();
-
     let mut state = pollster::block_on(State::new(window));
 
     event_loop.run(move |event, _, control_flow| {
@@ -22,33 +20,32 @@ fn main() {
             Event::WindowEvent { event, window_id }
             if window_id == state.window.id() => match event {
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-
                 WindowEvent::Resized(physical_size) => {
                     state.resize(physical_size);
                 }
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                     state.resize(*new_inner_size);
                 }
-
-                WindowEvent::MouseInput {
-                    state: element_state,
-                    button: MouseButton::Left,
+                WindowEvent::KeyboardInput {
+                    input: KeyboardInput {
+                        state: ElementState::Pressed,
+                        virtual_keycode: Some(keycode),
+                        ..
+                    },
                     ..
                 } => {
-                    if element_state == ElementState::Pressed {
-                        if let Some(cursor_pos) = state.get_cursor_position() {
-                            state.zoom_in(cursor_pos);
+                    match keycode {
+                        VirtualKeyCode::Up | VirtualKeyCode::Plus | VirtualKeyCode::Equals => {
+                            state.increase_sides();
                         }
+                        VirtualKeyCode::Down | VirtualKeyCode::Minus => {
+                            state.decrease_sides();
+                        }
+                        _ => {}
                     }
                 }
-
-                WindowEvent::CursorMoved { position, .. } => {
-                    state.update_cursor_position(position);
-                }
-
                 _ => {}
             },
-
             Event::RedrawRequested(window_id) if window_id == state.window.id() => {
                 match state.render() {
                     Ok(_) => {}
@@ -62,5 +59,5 @@ fn main() {
             }
             _ => {}
         }
-    });
+    })
 }
